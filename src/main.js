@@ -357,12 +357,12 @@ class UrbanEnvironment {
         
         // 飛行機追従カメラコントローラーを追加
         if (this.airplane) {
-            const airplaneController = new AirplaneCameraController(this.camera, this.airplane);
+            const airplaneController = new AirplaneCameraController(this.camera, this.airplane, this.scene);
             this.cameraManager.addController('airplane', airplaneController);
         }
         
         // デフォルトコントローラーをアクティブ化
-        this.cameraManager.switchController('mouse');
+        this.cameraManager.switchController('airplane');
     }
 
     animate() {
@@ -442,8 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (controls) {
             controls.innerHTML = `
                 <strong>飛行機操縦:</strong> W/S: スロットル | ↑↓: ピッチ | ←→: ロール | A/D: ヨー | Space: ブレーキ | R: リセット<br>
-                <strong>カメラ:</strong> 1-4: カメラモード | マウス移動: カメラ操作 | H: HUD表示切替<br>
-                <strong>環境:</strong> リアルタイム3D都市環境 + 飛行シミュレーション
+                <strong>カメラ:</strong> 1-5: カメラモード (追従/コックピット/軌道/自由/動的) | マウスホイール: ズーム | Z: ズームリセット | H: HUD表示切替<br>
+                <strong>環境:</strong> リアルタイム3D都市環境 + 高度カメラシステム + 衝突回避
             `;
         }
     } catch (error) {
