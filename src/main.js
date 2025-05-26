@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { CameraManager, MouseFollowCameraController } from './camera/index.js';
+import { CameraManager, MouseFollowCameraController, AirplaneCameraController } from './camera/index.js';
+import { Airplane, AirplaneHUD } from './airplane/index.js';
 
 class UrbanEnvironment {
     constructor() {
@@ -10,6 +11,8 @@ class UrbanEnvironment {
         this.cityObjects = [];
         this.time = 0;
         this.cameraManager = null;
+        this.airplane = null;
+        this.airplaneHUD = null;
         
         this.init();
         this.animate();
@@ -44,6 +47,9 @@ class UrbanEnvironment {
         this.createRoads();
         this.createBuildings();
         this.addLights();
+        
+        // 飛行機の追加
+        this.createAirplane();
         
         // カメラコントロール
         this.setupCameraSystem();
@@ -101,6 +107,7 @@ class UrbanEnvironment {
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         ground.position.y = -0.1;
+        ground.name = 'ground';
         this.scene.add(ground);
 
         // 草のテクスチャ効果（ランダムな小さな立方体）
@@ -313,6 +320,33 @@ class UrbanEnvironment {
         });
     }
 
+    createAirplane() {
+        // 飛行機の作成
+        this.airplane = new Airplane(this.scene);
+        
+        // 滑走路近くの初期位置に配置
+        this.airplane.reset(new THREE.Vector3(-30, 1, 0));
+        
+        // 飛行機のコントロールを有効化
+        this.airplane.enableControls();
+        
+        // HUDの作成
+        this.airplaneHUD = new AirplaneHUD(this.airplane);
+        
+        // 衝突イベントのセットアップ
+        this.airplane.setCrashCallback(() => {
+            console.log('Airplane crashed! Press R to reset.');
+            this.airplaneHUD.addWarningMessage('CRASH! Press R to reset', 5000);
+        });
+        
+        this.airplane.setBuildingCollisionCallback((building) => {
+            console.log('Airplane hit building!');
+            this.airplaneHUD.addWarningMessage('BUILDING COLLISION!', 3000);
+        });
+        
+        console.log('Airplane created and ready for flight');
+    }
+
     setupCameraSystem() {
         // カメラマネージャーの初期化
         this.cameraManager = new CameraManager(this.camera);
@@ -321,6 +355,12 @@ class UrbanEnvironment {
         const mouseController = new MouseFollowCameraController(this.camera);
         this.cameraManager.addController('mouse', mouseController);
         
+        // 飛行機追従カメラコントローラーを追加
+        if (this.airplane) {
+            const airplaneController = new AirplaneCameraController(this.camera, this.airplane);
+            this.cameraManager.addController('airplane', airplaneController);
+        }
+        
         // デフォルトコントローラーをアクティブ化
         this.cameraManager.switchController('mouse');
     }
@@ -328,6 +368,16 @@ class UrbanEnvironment {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
         this.time += 0.01;
+        const deltaTime = 0.016; // 約60FPS
+
+        // 飛行機の更新
+        if (this.airplane) {
+            this.airplane.update(deltaTime);
+            
+            // 地面・建物との衝突判定
+            this.airplane.checkGroundCollision([this.scene.getObjectByName('ground')]);
+            this.airplane.checkBuildingCollision(this.cityObjects);
+        }
 
         // カメラの更新
         if (this.cameraManager) {
@@ -356,6 +406,16 @@ class UrbanEnvironment {
             this.renderer.dispose();
         }
         
+        // 飛行機のクリーンアップ
+        if (this.airplane) {
+            this.airplane.dispose();
+        }
+        
+        // HUDのクリーンアップ
+        if (this.airplaneHUD) {
+            this.airplaneHUD.dispose();
+        }
+        
         // カメラマネージャーのクリーンアップ
         if (this.cameraManager) {
             this.cameraManager.dispose();
@@ -380,7 +440,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 操作説明の更新
         const controls = document.querySelector('.controls p');
         if (controls) {
-            controls.innerHTML = 'マウス移動: カメラ操作 | クリック: 自動回転ON/OFF<br>リアルタイム3D都市環境';
+            controls.innerHTML = `
+                <strong>飛行機操縦:</strong> W/S: スロットル | ↑↓: ピッチ | ←→: ロール | A/D: ヨー | Space: ブレーキ | R: リセット<br>
+                <strong>カメラ:</strong> 1-4: カメラモード | マウス移動: カメラ操作 | H: HUD表示切替<br>
+                <strong>環境:</strong> リアルタイム3D都市環境 + 飛行シミュレーション
+            `;
         }
     } catch (error) {
         console.error('3D都市環境の初期化に失敗しました:', error);
