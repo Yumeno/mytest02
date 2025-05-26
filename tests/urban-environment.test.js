@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import UrbanEnvironment from '../src/main.js';
+import { CameraManager, MouseFollowCameraController } from '../src/camera/index.js';
 
 // テスト用のDOM環境をセットアップ
 function setupTestEnvironment() {
@@ -50,6 +51,7 @@ describe('UrbanEnvironment', () => {
             expect(urbanEnv.scene).toBeInstanceOf(THREE.Scene);
             expect(urbanEnv.camera).toBeInstanceOf(THREE.PerspectiveCamera);
             expect(urbanEnv.renderer).toBeInstanceOf(THREE.WebGLRenderer);
+            expect(urbanEnv.cameraManager).toBeInstanceOf(CameraManager);
         });
 
         test('シーンに霧が設定されている', () => {
@@ -244,6 +246,53 @@ describe('UrbanEnvironment', () => {
             // アスペクト比が更新されていることを確認
             expect(urbanEnv.camera.aspect).not.toBe(originalWidth);
             expect(urbanEnv.camera.aspect).toBe(1200 / 800);
+        });
+    });
+
+    describe('カメラシステムテスト', () => {
+        beforeEach(() => {
+            urbanEnv = new UrbanEnvironment();
+        });
+
+        test('カメラマネージャーが正しく初期化される', () => {
+            expect(urbanEnv.cameraManager).toBeInstanceOf(CameraManager);
+            expect(urbanEnv.cameraManager.getCurrentController()).toBeDefined();
+            expect(urbanEnv.cameraManager.getControllerNames()).toContain('mouse');
+        });
+
+        test('マウス追従コントローラーが正しく動作する', () => {
+            const mouseController = urbanEnv.cameraManager.getController('mouse');
+            expect(mouseController).toBeInstanceOf(MouseFollowCameraController);
+            expect(mouseController.isActive).toBe(true);
+        });
+
+        test('カメラコントローラーが切り替え可能', () => {
+            // 新しいコントローラーを追加
+            const testController = new MouseFollowCameraController(urbanEnv.camera);
+            urbanEnv.cameraManager.addController('test', testController);
+            
+            // コントローラーを切り替え
+            const result = urbanEnv.cameraManager.switchController('test');
+            expect(result).toBe(true);
+            expect(urbanEnv.cameraManager.getCurrentController()).toBe(testController);
+        });
+
+        test('カメラマネージャーの更新が正常に動作する', () => {
+            const spy = jest.spyOn(urbanEnv.cameraManager, 'update');
+            
+            // animate メソッドを一度呼び出し
+            const animateOnce = () => {
+                urbanEnv.time += 0.01;
+                if (urbanEnv.cameraManager) {
+                    urbanEnv.cameraManager.update();
+                }
+                urbanEnv.renderer.render(urbanEnv.scene, urbanEnv.camera);
+            };
+            
+            animateOnce();
+            expect(spy).toHaveBeenCalled();
+            
+            spy.mockRestore();
         });
     });
 

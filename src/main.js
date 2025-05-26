@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CameraManager, MouseFollowCameraController } from './camera/index.js';
 
 class UrbanEnvironment {
     constructor() {
@@ -8,6 +9,7 @@ class UrbanEnvironment {
         this.animationId = null;
         this.cityObjects = [];
         this.time = 0;
+        this.cameraManager = null;
         
         this.init();
         this.animate();
@@ -44,7 +46,7 @@ class UrbanEnvironment {
         this.addLights();
         
         // カメラコントロール
-        this.setupCameraControls();
+        this.setupCameraSystem();
         
         // ウィンドウリサイズ対応
         window.addEventListener('resize', () => this.onWindowResize());
@@ -311,46 +313,25 @@ class UrbanEnvironment {
         });
     }
 
-    setupCameraControls() {
-        let isRotating = false;
-        const rotationSpeed = 0.005;
-
-        // マウスでカメラ回転
-        let mouseX = 0, mouseY = 0;
-        let targetX = 0, targetY = 0;
-
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        // 自動回転のトグル
-        document.addEventListener('click', () => {
-            isRotating = !isRotating;
-        });
-
-        this.cameraControls = { isRotating, mouseX, mouseY, targetX, targetY };
+    setupCameraSystem() {
+        // カメラマネージャーの初期化
+        this.cameraManager = new CameraManager(this.camera);
+        
+        // マウス追従カメラコントローラーを追加
+        const mouseController = new MouseFollowCameraController(this.camera);
+        this.cameraManager.addController('mouse', mouseController);
+        
+        // デフォルトコントローラーをアクティブ化
+        this.cameraManager.switchController('mouse');
     }
 
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
         this.time += 0.01;
 
-        // カメラの動き
-        if (this.cameraControls.isRotating) {
-            const radius = 70;
-            this.camera.position.x = Math.cos(this.time * 0.3) * radius;
-            this.camera.position.z = Math.sin(this.time * 0.3) * radius;
-            this.camera.position.y = 30 + Math.sin(this.time * 0.2) * 10;
-            this.camera.lookAt(0, 0, 0);
-        } else {
-            // マウス追従
-            this.cameraControls.targetX = this.cameraControls.mouseX * 0.2;
-            this.cameraControls.targetY = this.cameraControls.mouseY * 0.2;
-            
-            this.camera.position.x += (this.cameraControls.targetX * 50 - this.camera.position.x) * 0.05;
-            this.camera.position.y += (30 + this.cameraControls.targetY * 20 - this.camera.position.y) * 0.05;
-            this.camera.lookAt(0, 0, 0);
+        // カメラの更新
+        if (this.cameraManager) {
+            this.cameraManager.update();
         }
 
         this.renderer.render(this.scene, this.camera);
@@ -373,6 +354,11 @@ class UrbanEnvironment {
         
         if (this.renderer) {
             this.renderer.dispose();
+        }
+        
+        // カメラマネージャーのクリーンアップ
+        if (this.cameraManager) {
+            this.cameraManager.dispose();
         }
         
         // 全てのオブジェクトのクリーンアップ
