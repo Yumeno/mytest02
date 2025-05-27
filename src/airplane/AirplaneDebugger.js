@@ -67,20 +67,20 @@ export class AirplaneDebugger {
         
         switch(event.code) {
             case 'ArrowLeft':
-                // ロール軸回転（左）
-                airplane.physics.rotation.z += this.debugControlSensitivity.roll;
+                // ロール軸回転（左）- X軸（前方）周り
+                airplane.physics.rotation.x += this.debugControlSensitivity.roll;
                 break;
             case 'ArrowRight':
-                // ロール軸回転（右）
-                airplane.physics.rotation.z -= this.debugControlSensitivity.roll;
+                // ロール軸回転（右）- X軸（前方）周り
+                airplane.physics.rotation.x -= this.debugControlSensitivity.roll;
                 break;
             case 'ArrowUp':
-                // ピッチ軸回転（上）
-                airplane.physics.rotation.x -= this.debugControlSensitivity.pitch;
+                // ピッチ軸回転（上）- Z軸（横方）周り
+                airplane.physics.rotation.z -= this.debugControlSensitivity.pitch;
                 break;
             case 'ArrowDown':
-                // ピッチ軸回転（下）
-                airplane.physics.rotation.x += this.debugControlSensitivity.pitch;
+                // ピッチ軸回転（下）- Z軸（横方）周り
+                airplane.physics.rotation.z += this.debugControlSensitivity.pitch;
                 break;
             case 'KeyQ':
                 // ヨー軸回転（左）
@@ -319,14 +319,14 @@ export class AirplaneDebugger {
                 <p>Z: ${pos.z.toFixed(2)}</p>
                 <hr>
                 <p><strong>回転 (rad):</strong></p>
-                <p>Pitch: ${rot.x.toFixed(3)}</p>
-                <p>Yaw: ${rot.y.toFixed(3)}</p>
-                <p>Roll: ${rot.z.toFixed(3)}</p>
+                <p>Roll (X): ${rot.x.toFixed(3)}</p>
+                <p>Yaw (Y): ${rot.y.toFixed(3)}</p>
+                <p>Pitch (Z): ${rot.z.toFixed(3)}</p>
                 <hr>
                 <p><strong>回転 (度):</strong></p>
-                <p>Pitch: ${(rot.x * 180 / Math.PI).toFixed(1)}°</p>
-                <p>Yaw: ${(rot.y * 180 / Math.PI).toFixed(1)}°</p>
-                <p>Roll: ${(rot.z * 180 / Math.PI).toFixed(1)}°</p>
+                <p>Roll (X): ${(rot.x * 180 / Math.PI).toFixed(1)}°</p>
+                <p>Yaw (Y): ${(rot.y * 180 / Math.PI).toFixed(1)}°</p>
+                <p>Pitch (Z): ${(rot.z * 180 / Math.PI).toFixed(1)}°</p>
             `;
             this.debugUI.style.display = 'block';
         } else {
