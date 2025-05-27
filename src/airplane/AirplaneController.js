@@ -179,9 +179,9 @@ export class AirplaneController {
             const currentMaxVelocity = this.acceleration.maxAngularVelocity.roll * accelerationFactor;
             
             if (this.keys['ArrowLeft']) {
-                this.controlValues.roll = Math.min(currentMaxVelocity, this.controlValues.roll + this.sensitivity.roll * accelerationFactor);
-            } else if (this.keys['ArrowRight']) {
                 this.controlValues.roll = Math.max(-currentMaxVelocity, this.controlValues.roll - this.sensitivity.roll * accelerationFactor);
+            } else if (this.keys['ArrowRight']) {
+                this.controlValues.roll = Math.min(currentMaxVelocity, this.controlValues.roll + this.sensitivity.roll * accelerationFactor);
             }
         } else {
             // キー押下時間をリセット
