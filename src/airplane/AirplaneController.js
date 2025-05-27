@@ -30,11 +30,26 @@ export class AirplaneController {
             roll: 0
         };
         
+        // キー押下時間を追跡
+        this.keyPressTimes = {
+            pitch: 0,
+            roll: 0
+        };
+        
         this.sensitivity = {
             throttle: 0.02,
             pitch: 0.04,
             yaw: 0.03,
             roll: 0.05
+        };
+        
+        // 段階的加速のパラメータ
+        this.acceleration = {
+            rampUpTime: 1.5, // 最大角速度到達までの時間（秒）
+            maxAngularVelocity: {
+                pitch: 1.0, // 最大角速度
+                roll: 1.2
+            }
         };
         
         this.setupEventListeners();
@@ -107,13 +122,25 @@ export class AirplaneController {
     }
 
     updatePitch(deltaTime) {
-        const returnSpeed = 0.05; // 中立位置への復帰速度
+        const returnSpeed = 0.08; // 中立位置への復帰速度
         
-        if (this.keys['ArrowUp']) {
-            this.controlValues.pitch = Math.max(-1, this.controlValues.pitch - this.sensitivity.pitch);
-        } else if (this.keys['ArrowDown']) {
-            this.controlValues.pitch = Math.min(1, this.controlValues.pitch + this.sensitivity.pitch);
+        if (this.keys['ArrowUp'] || this.keys['ArrowDown']) {
+            // キー押下時間を増加
+            this.keyPressTimes.pitch += deltaTime;
+            
+            // 段階的加速：0から最大値まで滑らかに
+            const accelerationFactor = Math.min(1, this.keyPressTimes.pitch / this.acceleration.rampUpTime);
+            const currentMaxVelocity = this.acceleration.maxAngularVelocity.pitch * accelerationFactor;
+            
+            if (this.keys['ArrowUp']) {
+                this.controlValues.pitch = Math.max(-currentMaxVelocity, this.controlValues.pitch - this.sensitivity.pitch * accelerationFactor);
+            } else if (this.keys['ArrowDown']) {
+                this.controlValues.pitch = Math.min(currentMaxVelocity, this.controlValues.pitch + this.sensitivity.pitch * accelerationFactor);
+            }
         } else {
+            // キー押下時間をリセット
+            this.keyPressTimes.pitch = 0;
+            
             // 中立位置に戻す
             if (this.controlValues.pitch > 0) {
                 this.controlValues.pitch = Math.max(0, this.controlValues.pitch - returnSpeed);
@@ -141,13 +168,25 @@ export class AirplaneController {
     }
 
     updateRoll(deltaTime) {
-        const returnSpeed = 0.04;
+        const returnSpeed = 0.06; // 中立位置への復帰速度
         
-        if (this.keys['ArrowLeft']) {
-            this.controlValues.roll = Math.min(1, this.controlValues.roll + this.sensitivity.roll);
-        } else if (this.keys['ArrowRight']) {
-            this.controlValues.roll = Math.max(-1, this.controlValues.roll - this.sensitivity.roll);
+        if (this.keys['ArrowLeft'] || this.keys['ArrowRight']) {
+            // キー押下時間を増加
+            this.keyPressTimes.roll += deltaTime;
+            
+            // 段階的加速：0から最大値まで滑らかに
+            const accelerationFactor = Math.min(1, this.keyPressTimes.roll / this.acceleration.rampUpTime);
+            const currentMaxVelocity = this.acceleration.maxAngularVelocity.roll * accelerationFactor;
+            
+            if (this.keys['ArrowLeft']) {
+                this.controlValues.roll = Math.min(currentMaxVelocity, this.controlValues.roll + this.sensitivity.roll * accelerationFactor);
+            } else if (this.keys['ArrowRight']) {
+                this.controlValues.roll = Math.max(-currentMaxVelocity, this.controlValues.roll - this.sensitivity.roll * accelerationFactor);
+            }
         } else {
+            // キー押下時間をリセット
+            this.keyPressTimes.roll = 0;
+            
             // 中立位置に戻す
             if (this.controlValues.roll > 0) {
                 this.controlValues.roll = Math.max(0, this.controlValues.roll - returnSpeed);
@@ -185,6 +224,12 @@ export class AirplaneController {
             roll: 0
         };
         
+        // キー押下時間もリセット
+        this.keyPressTimes = {
+            pitch: 0,
+            roll: 0
+        };
+        
         console.log('Airplane reset to initial position');
     }
 
@@ -200,6 +245,12 @@ export class AirplaneController {
             throttle: 0,
             pitch: 0,
             yaw: 0,
+            roll: 0
+        };
+        
+        // キー押下時間もリセット
+        this.keyPressTimes = {
+            pitch: 0,
             roll: 0
         };
         console.log('Airplane controls deactivated');
