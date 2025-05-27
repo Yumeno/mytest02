@@ -3,15 +3,22 @@ import { AirplaneModel } from '../src/airplane/AirplaneModel.js';
 import { AirplanePhysics } from '../src/airplane/AirplanePhysics.js';
 import { AirplaneController } from '../src/airplane/AirplaneController.js';
 import { AirplaneDebugger } from '../src/airplane/AirplaneDebugger.js';
+import { AirplaneHUD } from '../src/airplane/AirplaneHUD.js';
 import * as THREE from 'three';
 
 // モックDOM環境
 global.document = {
     createElement: jest.fn(() => ({
         style: {},
+        className: '',
+        innerHTML: '',
         appendChild: jest.fn(),
         addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
+        removeEventListener: jest.fn(),
+        querySelector: jest.fn(() => ({
+            style: { transform: '' }
+        })),
+        parentNode: document.body
     })),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
@@ -23,7 +30,9 @@ global.document = {
         appendChild: jest.fn(),
         removeChild: jest.fn()
     },
-    querySelector: jest.fn(() => null)
+    querySelector: jest.fn(() => ({
+        style: { transform: '' }
+    }))
 };
 
 global.window = {
@@ -415,6 +424,136 @@ describe('Airplane System Tests', () => {
             expect(airplane.debugger.debugControlSensitivity.roll).toBeGreaterThan(0);
             expect(airplane.debugger.debugControlSensitivity.pitch).toBeGreaterThan(0);
             expect(airplane.debugger.debugControlSensitivity.yaw).toBeGreaterThan(0);
+        });
+    });
+
+    describe('AirplaneHUD', () => {
+        let hud;
+        let mockAirplane;
+
+        beforeEach(() => {
+            // Mock querySelector to return elements for attitude indicator
+            document.querySelector = jest.fn(() => ({
+                style: { transform: '' }
+            }));
+            
+            mockAirplane = {
+                getFlightData: jest.fn(() => ({
+                    position: new THREE.Vector3(10, 20, 30),
+                    velocity: new THREE.Vector3(15, 2, 0),
+                    rotation: new THREE.Euler(0.1, 0.2, 0.05),
+                    speed: 25,
+                    altitude: 20,
+                    heading: 1.57,
+                    isFlying: true,
+                    isOnGround: false,
+                    throttle: 0.8,
+                    fuel: 0.9
+                })),
+                controller: {
+                    getControlStatus: jest.fn(() => ({
+                        throttle: 0.8,
+                        pitch: 0.2,
+                        yaw: 0.1,
+                        roll: -0.1
+                    }))
+                },
+                physics: {
+                    stallSpeed: 8,
+                    takeoffSpeed: 12
+                }
+            };
+            
+            hud = new AirplaneHUD(mockAirplane);
+        });
+
+        afterEach(() => {
+            if (hud) {
+                hud.dispose();
+            }
+        });
+
+        test('should initialize with airplane reference', () => {
+            expect(hud.airplane).toBe(mockAirplane);
+            expect(hud.isVisible).toBe(true);
+        });
+
+        test('should create HUD elements', () => {
+            expect(hud.hudElement).toBeDefined();
+            expect(hud.attitudeIndicator).toBeDefined();
+        });
+
+        test('should update attitude indicator with pitch and roll', () => {
+            const pitch = 15;
+            const roll = -10;
+            
+            hud.updateAttitudeIndicator(pitch, roll);
+            
+            // The attitude indicator should be updated (specific implementation depends on DOM mocking)
+            expect(document.querySelector).toHaveBeenCalled();
+        });
+
+        test('should calculate compass direction correctly', () => {
+            expect(hud.getCompassDirection(0)).toBe('N');
+            expect(hud.getCompassDirection(90)).toBe('E');
+            expect(hud.getCompassDirection(180)).toBe('S');
+            expect(hud.getCompassDirection(270)).toBe('W');
+            expect(hud.getCompassDirection(45)).toBe('NE');
+        });
+
+        test('should create throttle bar with correct colors', () => {
+            const lowThrottle = hud.createThrottleBar(0.2);
+            const midThrottle = hud.createThrottleBar(0.6);
+            const highThrottle = hud.createThrottleBar(0.9);
+            
+            expect(lowThrottle).toContain('#00ff00'); // Green for low
+            expect(midThrottle).toContain('#ffff00'); // Yellow for mid
+            expect(highThrottle).toContain('#ff8800'); // Orange for high
+        });
+
+        test('should update performance stats', () => {
+            const initialFrameCount = hud.performanceStats.frameCount;
+            
+            hud.updatePerformanceStats();
+            
+            expect(hud.performanceStats.frameCount).toBe(initialFrameCount + 1);
+        });
+
+        test('should toggle visibility correctly', () => {
+            expect(hud.isVisible).toBe(true);
+            
+            hud.toggle();
+            expect(hud.isVisible).toBe(false);
+            
+            hud.toggle();
+            expect(hud.isVisible).toBe(true);
+        });
+
+        test('should show and hide HUD elements', () => {
+            hud.hide();
+            expect(hud.isVisible).toBe(false);
+            
+            hud.show();
+            expect(hud.isVisible).toBe(true);
+        });
+
+        test('should get flight status correctly', () => {
+            const groundedData = { isOnGround: true, speed: 2 };
+            const flyingData = { isOnGround: false, speed: 15 };
+            const stalledData = { isOnGround: false, speed: 5 };
+            
+            expect(hud.getFlightStatus(groundedData, false)).toBe('PARKED');
+            expect(hud.getFlightStatus({ ...groundedData, speed: 8 }, false)).toBe('TAXI');
+            expect(hud.getFlightStatus(flyingData, false)).toBe('FLYING');
+            expect(hud.getFlightStatus(stalledData, true)).toBe('STALL');
+        });
+
+        test('should handle disposal properly', () => {
+            const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+            
+            hud.dispose();
+            
+            expect(clearIntervalSpy).toHaveBeenCalled();
         });
     });
 });
