@@ -66,7 +66,7 @@ export class AirplanePhysics {
         const dynamicPressure = 0.5 * airDensity * speed * speed;
         
         // 簡略化された揚力モデル：速度と迎角の組み合わせ
-        const angleOfAttack = this.rotation.x; // ピッチ角を迎角として使用
+        const angleOfAttack = this.rotation.z; // ピッチ角を迎角として使用（Z軸周り）
         
         // より直感的な揚力計算：基本揚力 + 迎角による変化
         const baseSpeedLift = speed > this.stallSpeed ? baseLiftCoefficient : baseLiftCoefficient * (speed / this.stallSpeed);
@@ -134,10 +134,10 @@ export class AirplanePhysics {
         const speed = this.velocity.length();
         const controlEffectiveness = Math.min(speed / 10, 1.0); // 速度が低いと操縦効果低下
         
-        // 角速度更新
-        this.angularVelocity.x = this.controls.pitch * this.maxAngularVelocity.pitch * controlEffectiveness;
-        this.angularVelocity.y = this.controls.yaw * this.maxAngularVelocity.yaw * controlEffectiveness;
-        this.angularVelocity.z = this.controls.roll * this.maxAngularVelocity.roll * controlEffectiveness;
+        // 角速度更新（正しい航空機座標系）
+        this.angularVelocity.x = this.controls.roll * this.maxAngularVelocity.roll * controlEffectiveness;  // ロール：X軸（前方）周り
+        this.angularVelocity.y = this.controls.yaw * this.maxAngularVelocity.yaw * controlEffectiveness;    // ヨー：Y軸（上方）周り
+        this.angularVelocity.z = this.controls.pitch * this.maxAngularVelocity.pitch * controlEffectiveness; // ピッチ：Z軸（横方）周り
         
         // 角度更新
         this.rotation.x += this.angularVelocity.x * deltaTime;
@@ -146,8 +146,8 @@ export class AirplanePhysics {
         
         // 自動安定化（速度が十分あるとき）
         if (speed > this.stallSpeed && !this.isOnGround) {
-            this.rotation.z *= 0.95; // ロール復元
-            this.rotation.x *= 0.98; // ピッチ復元
+            this.rotation.x *= 0.95; // ロール復元（X軸周り）
+            this.rotation.z *= 0.98; // ピッチ復元（Z軸周り）
         }
     }
 
@@ -175,9 +175,9 @@ export class AirplanePhysics {
     }
 
     applyLimits() {
-        // 回転角度の制限
-        this.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.rotation.x)); // ピッチ ±60度
-        this.rotation.z = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotation.z)); // ロール ±90度
+        // 回転角度の制限（正しい航空機座標系）
+        this.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotation.x)); // ロール ±90度（X軸周り）
+        this.rotation.z = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.rotation.z)); // ピッチ ±60度（Z軸周り）
         
         // 最大速度制限
         const maxSpeed = 80; // m/s
