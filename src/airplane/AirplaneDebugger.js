@@ -15,6 +15,8 @@ export class AirplaneDebugger {
         // 座標軸表示用のヘルパー
         this.worldAxisHelper = null;
         this.airplaneAxisHelper = null;
+        this.worldAxisLabels = null;
+        this.airplaneAxisLabels = null;
         
         // デバッグ操作の感度
         this.debugControlSensitivity = {
@@ -23,9 +25,20 @@ export class AirplaneDebugger {
             yaw: 0.02
         };
         
-        this.setupDebugControls();
-        this.createAxisHelpers();
-        this.createDebugUI();
+        // 初期化を安全に実行
+        this.initialize();
+    }
+
+    initialize() {
+        try {
+            this.setupDebugControls();
+            this.createAxisHelpers();
+            this.createDebugUI();
+        } catch (error) {
+            console.error('AirplaneDebugger initialization error:', error);
+            // フォールバック：最低限の機能のみ初期化
+            this.setupDebugControls();
+        }
     }
 
     setupDebugControls() {
@@ -167,12 +180,16 @@ export class AirplaneDebugger {
     }
 
     createAxisLabels() {
-        // 世界座標系のラベル（CSS2DRenderer を使わずに簡易実装）
-        const loader = new THREE.FontLoader();
-        
-        // 簡易ラベル用のスプライト
-        this.worldAxisLabels = this.createSimpleAxisLabels('World', 0x000000);
-        this.airplaneAxisLabels = this.createSimpleAxisLabels('Aircraft', 0xffffff);
+        try {
+            // 簡易ラベル用のスプライト
+            this.worldAxisLabels = this.createSimpleAxisLabels('World', 0x000000);
+            this.airplaneAxisLabels = this.createSimpleAxisLabels('Aircraft', 0xffffff);
+        } catch (error) {
+            console.error('Error creating axis labels:', error);
+            // フォールバック：ラベルなしでも動作継続
+            this.worldAxisLabels = new THREE.Group();
+            this.airplaneAxisLabels = new THREE.Group();
+        }
     }
 
     createSimpleAxisLabels(prefix, color) {
@@ -217,30 +234,46 @@ export class AirplaneDebugger {
     }
 
     showAxisHelpers() {
-        // 世界座標系軸を表示
-        if (this.worldAxisHelper && !this.scene.children.includes(this.worldAxisHelper)) {
-            this.scene.add(this.worldAxisHelper);
-            this.scene.add(this.worldAxisLabels);
-        }
-        
-        // 機体相対座標系軸を表示
-        if (this.airplaneAxisHelper && !this.airplane.mesh.children.includes(this.airplaneAxisHelper)) {
-            this.airplane.mesh.add(this.airplaneAxisHelper);
-            this.airplane.mesh.add(this.airplaneAxisLabels);
+        try {
+            // 世界座標系軸を表示
+            if (this.worldAxisHelper && !this.scene.children.includes(this.worldAxisHelper)) {
+                this.scene.add(this.worldAxisHelper);
+                if (this.worldAxisLabels) {
+                    this.scene.add(this.worldAxisLabels);
+                }
+            }
+            
+            // 機体相対座標系軸を表示
+            if (this.airplaneAxisHelper && this.airplane.mesh && !this.airplane.mesh.children.includes(this.airplaneAxisHelper)) {
+                this.airplane.mesh.add(this.airplaneAxisHelper);
+                if (this.airplaneAxisLabels) {
+                    this.airplane.mesh.add(this.airplaneAxisLabels);
+                }
+            }
+        } catch (error) {
+            console.error('Error showing axis helpers:', error);
         }
     }
 
     hideAxisHelpers() {
-        // 世界座標系軸を非表示
-        if (this.worldAxisHelper && this.scene.children.includes(this.worldAxisHelper)) {
-            this.scene.remove(this.worldAxisHelper);
-            this.scene.remove(this.worldAxisLabels);
-        }
-        
-        // 機体相対座標系軸を非表示
-        if (this.airplaneAxisHelper && this.airplane.mesh.children.includes(this.airplaneAxisHelper)) {
-            this.airplane.mesh.remove(this.airplaneAxisHelper);
-            this.airplane.mesh.remove(this.airplaneAxisLabels);
+        try {
+            // 世界座標系軸を非表示
+            if (this.worldAxisHelper && this.scene.children.includes(this.worldAxisHelper)) {
+                this.scene.remove(this.worldAxisHelper);
+                if (this.worldAxisLabels) {
+                    this.scene.remove(this.worldAxisLabels);
+                }
+            }
+            
+            // 機体相対座標系軸を非表示
+            if (this.airplaneAxisHelper && this.airplane.mesh && this.airplane.mesh.children.includes(this.airplaneAxisHelper)) {
+                this.airplane.mesh.remove(this.airplaneAxisHelper);
+                if (this.airplaneAxisLabels) {
+                    this.airplane.mesh.remove(this.airplaneAxisLabels);
+                }
+            }
+        } catch (error) {
+            console.error('Error hiding axis helpers:', error);
         }
     }
 
@@ -313,25 +346,29 @@ export class AirplaneDebugger {
     }
 
     dispose() {
-        // イベントリスナーの削除
-        if (this.boundKeyDown) {
-            document.removeEventListener('keydown', this.boundKeyDown);
-        }
-        
-        // デバッグUI削除
-        if (this.debugUI && this.debugUI.parentNode) {
-            this.debugUI.parentNode.removeChild(this.debugUI);
-        }
-        
-        // 座標軸ヘルパーの削除
-        this.hideAxisHelpers();
-        
-        // リソースのクリーンアップ
-        if (this.worldAxisHelper) {
-            this.worldAxisHelper.dispose();
-        }
-        if (this.airplaneAxisHelper) {
-            this.airplaneAxisHelper.dispose();
+        try {
+            // イベントリスナーの削除
+            if (this.boundKeyDown) {
+                document.removeEventListener('keydown', this.boundKeyDown);
+            }
+            
+            // デバッグUI削除
+            if (this.debugUI && this.debugUI.parentNode) {
+                this.debugUI.parentNode.removeChild(this.debugUI);
+            }
+            
+            // 座標軸ヘルパーの削除
+            this.hideAxisHelpers();
+            
+            // リソースのクリーンアップ
+            if (this.worldAxisHelper && this.worldAxisHelper.dispose) {
+                this.worldAxisHelper.dispose();
+            }
+            if (this.airplaneAxisHelper && this.airplaneAxisHelper.dispose) {
+                this.airplaneAxisHelper.dispose();
+            }
+        } catch (error) {
+            console.error('Error during AirplaneDebugger disposal:', error);
         }
     }
 }
