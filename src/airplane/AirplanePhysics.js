@@ -52,19 +52,30 @@ export class AirplanePhysics {
         const speed = this.velocity.length();
         const airDensity = 1.225; // kg/m³ at sea level
         const wingArea = 12; // m²
-        const liftCoefficient = 0.4;
+        const baseLiftCoefficient = 0.6; // より強い基本揚力
         
         // 動圧
         const dynamicPressure = 0.5 * airDensity * speed * speed;
         
-        // 揚力計算（迎角に依存）
+        // 簡略化された揚力モデル：速度と迎角の組み合わせ
         const angleOfAttack = this.rotation.x; // ピッチ角を迎角として使用
-        const effectiveLiftCoeff = liftCoefficient * Math.sin(angleOfAttack + Math.PI / 12);
+        
+        // より直感的な揚力計算：基本揚力 + 迎角による変化
+        const baseSpeedLift = speed > this.stallSpeed ? baseLiftCoefficient : baseLiftCoefficient * (speed / this.stallSpeed);
+        const angleEffect = Math.sin(angleOfAttack) * 0.8; // 迎角効果を強化
+        const effectiveLiftCoeff = baseSpeedLift + angleEffect;
+        
         this.lift = dynamicPressure * wingArea * effectiveLiftCoeff;
         
-        // 失速チェック
-        if (Math.abs(angleOfAttack) > Math.PI / 6) { // 30度以上で失速
-            this.lift *= 0.3;
+        // 失速チェック（より緩やか）
+        if (Math.abs(angleOfAttack) > Math.PI / 4) { // 45度以上で失速開始
+            const stallFactor = 1 - Math.min(1, (Math.abs(angleOfAttack) - Math.PI / 4) / (Math.PI / 6));
+            this.lift *= Math.max(0.2, stallFactor);
+        }
+        
+        // 最低揚力を保証（飛行感を向上）
+        if (speed > this.stallSpeed) {
+            this.lift = Math.max(this.lift, this.mass * 0.3); // 重量の30%は最低保証
         }
     }
 
