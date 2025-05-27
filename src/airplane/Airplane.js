@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AirplaneModel } from './AirplaneModel.js';
 import { AirplanePhysics } from './AirplanePhysics.js';
 import { AirplaneController } from './AirplaneController.js';
+import { AirplaneDebugger } from './AirplaneDebugger.js';
 
 export class Airplane {
     constructor(scene) {
@@ -9,6 +10,7 @@ export class Airplane {
         this.model = new AirplaneModel();
         this.physics = new AirplanePhysics();
         this.controller = new AirplaneController(this);
+        this.debugger = new AirplaneDebugger(this, scene);
         
         this.mesh = this.model.getModel();
         this.scene.add(this.mesh);
@@ -34,6 +36,9 @@ export class Airplane {
     }
 
     update(deltaTime) {
+        // デバッガー更新
+        this.debugger.update();
+        
         // コントローラー更新
         this.controller.update(deltaTime);
         
@@ -201,6 +206,7 @@ export class Airplane {
         this.scene.remove(this.mesh);
         this.model.dispose();
         this.controller.dispose();
+        this.debugger.dispose();
         console.log('Airplane disposed');
     }
 

@@ -443,7 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
             controls.innerHTML = `
                 <strong>飛行機操縦:</strong> W/S: スロットル | ↑↓: ピッチ | ←→: ロール | A/D: ヨー | Space: ブレーキ | R: リセット<br>
                 <strong>カメラ:</strong> 1-5: カメラモード (追従/コックピット/軌道/自由/動的) | マウスホイール: ズーム | Z: ズームリセット | H: HUD表示切替<br>
-                <strong>環境:</strong> リアルタイム3D都市環境 + 高度カメラシステム + 衝突回避
+                <strong>デバッグ:</strong> F: デバッグモード切替 | デバッグ中: ↑↓ ピッチ | ←→ ロール | Q/E ヨー | R リセット<br>
+                <strong>環境:</strong> リアルタイム3D都市環境 + 高度カメラシステム + 衝突回避 + 座標軸表示
             `;
         }
     } catch (error) {
