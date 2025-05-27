@@ -20,6 +20,9 @@ export class AirplanePhysics {
         this.stallSpeed = 8; // m/s
         this.takeoffSpeed = 12; // m/s
         
+        // デバッグモードフラグ
+        this.isDebugMode = false;
+        
         this.controls = {
             throttle: 0, // 0-1
             pitch: 0, // -1 to 1
@@ -35,6 +38,11 @@ export class AirplanePhysics {
     }
 
     update(deltaTime) {
+        // デバッグモード時は物理演算をスキップ
+        if (this.isDebugMode) {
+            return;
+        }
+        
         this.updateThrust();
         this.updateAerodynamics();
         this.updateForces(deltaTime);

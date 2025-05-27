@@ -2,6 +2,7 @@ import { Airplane } from '../src/airplane/Airplane.js';
 import { AirplaneModel } from '../src/airplane/AirplaneModel.js';
 import { AirplanePhysics } from '../src/airplane/AirplanePhysics.js';
 import { AirplaneController } from '../src/airplane/AirplaneController.js';
+import { AirplaneDebugger } from '../src/airplane/AirplaneDebugger.js';
 import * as THREE from 'three';
 
 // モックDOM環境
@@ -241,6 +242,7 @@ describe('Airplane System Tests', () => {
             expect(airplane.model).toBeDefined();
             expect(airplane.physics).toBeDefined();
             expect(airplane.controller).toBeDefined();
+            expect(airplane.debugger).toBeDefined();
             expect(airplane.mesh).toBeDefined();
         });
 
@@ -376,6 +378,43 @@ describe('Airplane System Tests', () => {
             
             // 平均フレーム時間が目標値以下
             expect(avgFrameTime).toBeLessThan(targetFrameTime);
+        });
+    });
+
+    describe('Debug System Tests', () => {
+        test('should initialize physics with debug mode support', () => {
+            const physics = new AirplanePhysics();
+            expect(physics.isDebugMode).toBe(false);
+        });
+
+        test('should skip physics updates in debug mode', () => {
+            airplane.physics.isDebugMode = true;
+            airplane.physics.position.set(10, 10, 10);
+            const initialPosition = airplane.physics.position.clone();
+            
+            airplane.physics.update(0.1);
+            
+            // Position should remain unchanged in debug mode
+            expect(airplane.physics.position).toEqual(initialPosition);
+        });
+
+        test('should create debugger with airplane reference', () => {
+            expect(airplane.debugger).toBeDefined();
+            expect(airplane.debugger.airplane).toBe(airplane);
+            expect(airplane.debugger.scene).toBe(scene);
+        });
+
+        test('should toggle debug mode', () => {
+            const initialDebugMode = airplane.debugger.isDebugMode;
+            airplane.debugger.toggleDebugMode();
+            expect(airplane.debugger.isDebugMode).toBe(!initialDebugMode);
+        });
+
+        test('should have debug controls with correct sensitivity', () => {
+            expect(airplane.debugger.debugControlSensitivity).toBeDefined();
+            expect(airplane.debugger.debugControlSensitivity.roll).toBeGreaterThan(0);
+            expect(airplane.debugger.debugControlSensitivity.pitch).toBeGreaterThan(0);
+            expect(airplane.debugger.debugControlSensitivity.yaw).toBeGreaterThan(0);
         });
     });
 });
