@@ -10,10 +10,12 @@ export class Airplane {
         this.model = new AirplaneModel();
         this.physics = new AirplanePhysics();
         this.controller = new AirplaneController(this);
-        this.debugger = new AirplaneDebugger(this, scene);
         
         this.mesh = this.model.getModel();
         this.scene.add(this.mesh);
+        
+        // Initialize debugger after mesh is added to scene
+        this.debugger = new AirplaneDebugger(this, scene);
         
         // 初期位置設定
         this.mesh.position.copy(this.physics.position);
